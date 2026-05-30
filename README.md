@@ -2,8 +2,6 @@
 
 > Submission Proyek Akhir Kelas **Membangun Sistem Machine Learning** — [Dicoding](https://www.dicoding.com/)
 
-**Nama:** I Kadek Rai Pramana  
-**Username Dicoding:** `rai_pramana`  
 **Dataset:** [Wine Quality (Red)](https://archive.ics.uci.edu/ml/datasets/wine+quality) — UCI ML Repository
 
 ---
