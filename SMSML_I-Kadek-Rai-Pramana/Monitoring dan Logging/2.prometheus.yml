@@ -1,0 +1,21 @@
+# Prometheus Configuration for Wine Quality ML Monitoring
+# Author: I Kadek Rai Pramana
+
+global:
+  scrape_interval: 15s      # Scrape target setiap 15 detik
+  evaluation_interval: 15s  # Evaluasi rules setiap 15 detik
+
+scrape_configs:
+  # Job untuk scraping metrics dari ML model server
+  - job_name: 'wine-quality-ml'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['localhost:5001']
+        labels:
+          instance: 'ml-model-server'
+          app: 'wine-quality-classifier'
+
+  # Job untuk Prometheus sendiri (self-monitoring)
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
