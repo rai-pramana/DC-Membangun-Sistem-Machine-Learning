@@ -1,4 +1,4 @@
-# Prometheus Configuration for Wine Quality ML Monitoring
+# Prometheus Configuration for Heart Disease ML Monitoring
 # Author: I Kadek Rai Pramana
 
 global:
@@ -7,13 +7,13 @@ global:
 
 scrape_configs:
   # Job untuk scraping metrics dari ML model server
-  - job_name: 'wine-quality-ml'
+  - job_name: 'heart-disease-ml'
     scrape_interval: 5s
     static_configs:
       - targets: ['localhost:5001']
         labels:
           instance: 'ml-model-server'
-          app: 'wine-quality-classifier'
+          app: 'heart-disease-classifier'
 
   # Job untuk Prometheus sendiri (self-monitoring)
   - job_name: 'prometheus'

@@ -1,7 +1,7 @@
 """
 Model Training with Hyperparameter Tuning & Manual Logging (Skilled)
 =====================================================================
-Script untuk melatih model Wine Quality Classification menggunakan
+Script untuk melatih model Heart Disease Classification menggunakan
 MLflow Tracking UI dengan hyperparameter tuning (GridSearchCV)
 dan manual logging.
 
@@ -12,7 +12,7 @@ import pandas as pd
 import numpy as np
 import mlflow
 import mlflow.sklearn
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import (
     accuracy_score, precision_score, recall_score,
@@ -30,15 +30,15 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
-def load_preprocessed_data(data_dir: str = 'wine_quality_preprocessing'):
+def load_preprocessed_data(data_dir: str = 'heart_disease_preprocessing'):
     """Load data hasil preprocessing."""
     train_df = pd.read_csv(os.path.join(data_dir, 'train.csv'))
     test_df = pd.read_csv(os.path.join(data_dir, 'test.csv'))
 
-    X_train = train_df.drop('quality_label', axis=1)
-    y_train = train_df['quality_label']
-    X_test = test_df.drop('quality_label', axis=1)
-    y_test = test_df['quality_label']
+    X_train = train_df.drop('heart_disease', axis=1)
+    y_train = train_df['heart_disease']
+    X_test = test_df.drop('heart_disease', axis=1)
+    y_test = test_df['heart_disease']
 
     return X_train, X_test, y_train, y_test
 
@@ -48,9 +48,9 @@ def create_confusion_matrix_plot(y_test, predictions, save_path='confusion_matri
     cm = confusion_matrix(y_test, predictions)
     plt.figure(figsize=(8, 6))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
-                xticklabels=['Not Good', 'Good'],
-                yticklabels=['Not Good', 'Good'])
-    plt.title('Confusion Matrix - Wine Quality Classification', fontsize=14)
+                xticklabels=['No Disease', 'Has Disease'],
+                yticklabels=['No Disease', 'Has Disease'])
+    plt.title('Confusion Matrix - Heart Disease Classification', fontsize=14)
     plt.ylabel('Actual', fontsize=12)
     plt.xlabel('Predicted', fontsize=12)
     plt.tight_layout()
@@ -92,7 +92,7 @@ def create_roc_curve_plot(y_test, pred_proba, save_path='roc_curve.png'):
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate', fontsize=12)
     plt.ylabel('True Positive Rate', fontsize=12)
-    plt.title('ROC Curve - Wine Quality Classification', fontsize=14)
+    plt.title('ROC Curve - Heart Disease Classification', fontsize=14)
     plt.legend(loc='lower right', fontsize=11)
     plt.tight_layout()
     plt.savefig(save_path, dpi=150, bbox_inches='tight')
@@ -107,7 +107,7 @@ def train_with_tuning():
     mlflow.set_tracking_uri("http://127.0.0.1:5000")
 
     # Set experiment
-    mlflow.set_experiment("wine-quality-tuning")
+    mlflow.set_experiment("heart-disease-tuning")
 
     # Load data
     X_train, X_test, y_train, y_test = load_preprocessed_data()

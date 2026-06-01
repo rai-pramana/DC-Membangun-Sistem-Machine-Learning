@@ -1,127 +1,97 @@
 """
-Inference Script for Wine Quality ML Model
-============================================
-Script ini mengirimkan request prediksi ke model server
-untuk testing dan demonstrasi inference.
+Inference Script - Heart Disease Classification
+=================================================
+Script untuk melakukan inference ke model server
+dan men-generate traffic untuk monitoring.
 
 Author: I Kadek Rai Pramana
 """
 
 import requests
-import json
-import time
 import random
+import time
+import json
+
+SERVER_URL = "http://localhost:5001"
 
 
-# Base URL model server
-BASE_URL = "http://localhost:5001"
-
-
-def check_health():
-    """Cek apakah model server berjalan."""
-    try:
-        response = requests.get(f"{BASE_URL}/health")
-        print(f"Health Check: {response.json()}")
-        return response.json().get('status') == 'healthy'
-    except requests.ConnectionError:
-        print("[ERROR] Cannot connect to model server. Make sure it's running.")
-        return False
-
-
-def predict_single(sample: dict):
-    """Kirim satu prediksi ke model server."""
-    response = requests.post(
-        f"{BASE_URL}/predict",
-        json=sample,
-        headers={'Content-Type': 'application/json'}
-    )
-    return response.json()
-
-
-def run_batch_inference(n_samples: int = 20):
-    """
-    Jalankan batch inference untuk menghasilkan traffic
-    yang bisa dimonitor oleh Prometheus dan Grafana.
-    """
-    # Sample data wine quality (berbagai kualitas)
-    sample_wines = [
-        {
-            "fixed acidity": 7.4, "volatile acidity": 0.70, "citric acid": 0.00,
-            "residual sugar": 1.9, "chlorides": 0.076, "free sulfur dioxide": 11.0,
-            "total sulfur dioxide": 34.0, "density": 0.9978, "pH": 3.51,
-            "sulphates": 0.56, "alcohol": 9.4
-        },
-        {
-            "fixed acidity": 7.8, "volatile acidity": 0.88, "citric acid": 0.00,
-            "residual sugar": 2.6, "chlorides": 0.098, "free sulfur dioxide": 25.0,
-            "total sulfur dioxide": 67.0, "density": 0.9968, "pH": 3.20,
-            "sulphates": 0.68, "alcohol": 9.8
-        },
-        {
-            "fixed acidity": 11.2, "volatile acidity": 0.28, "citric acid": 0.56,
-            "residual sugar": 1.9, "chlorides": 0.075, "free sulfur dioxide": 17.0,
-            "total sulfur dioxide": 60.0, "density": 0.9980, "pH": 3.16,
-            "sulphates": 0.58, "alcohol": 9.8
-        },
-        {
-            "fixed acidity": 7.4, "volatile acidity": 0.70, "citric acid": 0.00,
-            "residual sugar": 1.9, "chlorides": 0.076, "free sulfur dioxide": 11.0,
-            "total sulfur dioxide": 34.0, "density": 0.9978, "pH": 3.51,
-            "sulphates": 0.56, "alcohol": 12.5
-        },
-        {
-            "fixed acidity": 6.7, "volatile acidity": 0.32, "citric acid": 0.44,
-            "residual sugar": 2.4, "chlorides": 0.061, "free sulfur dioxide": 24.0,
-            "total sulfur dioxide": 48.0, "density": 0.9949, "pH": 3.28,
-            "sulphates": 0.76, "alcohol": 11.8
-        },
+def generate_heart_disease_sample():
+    """Generate random Heart Disease sample data."""
+    return [
+        round(random.uniform(29, 77), 1),    # age
+        random.choice([0, 1]),                 # sex
+        random.choice([0, 1, 2, 3]),          # cp (chest pain type)
+        round(random.uniform(94, 200), 0),    # trestbps
+        round(random.uniform(126, 564), 0),   # chol
+        random.choice([0, 1]),                 # fbs
+        random.choice([0, 1, 2]),             # restecg
+        round(random.uniform(71, 202), 0),    # thalach
+        random.choice([0, 1]),                 # exang
+        round(random.uniform(0, 6.2), 1),     # oldpeak
+        random.choice([0, 1, 2]),             # slope
+        random.choice([0, 1, 2, 3]),          # ca
+        random.choice([3.0, 6.0, 7.0]),       # thal
     ]
 
-    print(f"\n{'='*60}")
-    print(f"BATCH INFERENCE - {n_samples} Requests")
-    print(f"{'='*60}\n")
 
-    results = []
-    for i in range(n_samples):
-        # Pilih sample acak dan tambahkan sedikit noise
-        base_sample = random.choice(sample_wines).copy()
-        for key in base_sample:
-            base_sample[key] = round(base_sample[key] * random.uniform(0.9, 1.1), 3)
+def main():
+    """Generate inference traffic."""
+    print("=" * 60)
+    print("HEART DISEASE INFERENCE TRAFFIC GENERATOR")
+    print("=" * 60)
 
+    # Check server health
+    try:
+        r = requests.get(f"{SERVER_URL}/health", timeout=5)
+        health = r.json()
+        print(f"\n[INFO] Server status: {health['status']}")
+        print(f"[INFO] Model accuracy: {health['model_accuracy']}")
+    except Exception as e:
+        print(f"[ERROR] Server not reachable: {e}")
+        return
+
+    # Generate traffic
+    n_requests = 100
+    print(f"\n[INFO] Sending {n_requests} inference requests...\n")
+
+    results = {'no_disease': 0, 'has_disease': 0, 'errors': 0}
+
+    for i in range(n_requests):
         try:
-            result = predict_single(base_sample)
-            results.append(result)
-            print(f"  Request {i+1:3d}: Prediction={result.get('label', 'N/A')}, "
-                  f"Confidence={result.get('confidence', 'N/A')}, "
-                  f"Latency={result.get('latency_ms', 'N/A')}ms")
-        except Exception as e:
-            print(f"  Request {i+1:3d}: ERROR - {e}")
+            sample = generate_heart_disease_sample()
+            payload = {"features": [sample]}
 
-        # Delay antara request
+            r = requests.post(f"{SERVER_URL}/predict", json=payload, timeout=10)
+
+            if r.status_code == 200:
+                result = r.json()
+                label = result['labels'][0]
+                results[label] = results.get(label, 0) + 1
+                prob = result['probabilities'][0]
+
+                if (i + 1) % 20 == 0:
+                    print(f"  [{i+1:3d}/{n_requests}] Prediction: {label} "
+                          f"(prob: {max(prob):.3f}) "
+                          f"| latency: {result['latency_ms']:.1f}ms")
+            else:
+                results['errors'] += 1
+
+        except Exception as e:
+            results['errors'] += 1
+
+        # Simulate realistic traffic
         time.sleep(random.uniform(0.1, 0.5))
 
     # Summary
-    if results:
-        good_count = sum(1 for r in results if r.get('prediction') == 1)
-        avg_latency = sum(r.get('latency_ms', 0) for r in results) / len(results)
-        print(f"\n{'='*60}")
-        print(f"INFERENCE SUMMARY")
-        print(f"{'='*60}")
-        print(f"  Total Requests:   {len(results)}")
-        print(f"  Good Quality:     {good_count} ({good_count/len(results)*100:.1f}%)")
-        print(f"  Standard Quality: {len(results)-good_count} ({(len(results)-good_count)/len(results)*100:.1f}%)")
-        print(f"  Avg Latency:      {avg_latency:.2f}ms")
-        print(f"{'='*60}\n")
+    print(f"\n{'='*60}")
+    print("INFERENCE SUMMARY")
+    print(f"{'='*60}")
+    print(f"  Total requests: {n_requests}")
+    print(f"  No Disease:     {results['no_disease']}")
+    print(f"  Has Disease:    {results['has_disease']}")
+    print(f"  Errors:         {results['errors']}")
+    print(f"{'='*60}")
 
 
 if __name__ == '__main__':
-    print("Wine Quality ML - Inference Script")
-    print("=" * 40)
-
-    if check_health():
-        print("\n[INFO] Model server is healthy. Starting inference...\n")
-        run_batch_inference(n_samples=30)
-    else:
-        print("\n[ERROR] Model server is not available.")
-        print("Please start the server first:")
-        print("  python 3.prometheus_exporter.py")
+    main()
